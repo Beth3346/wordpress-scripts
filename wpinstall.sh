@@ -1,9 +1,3 @@
-# download wordpress
-# add config file
-# add wordpress database
-# install wordpress tables
-# install wordpress boilerplate theme
-# delete default plugins
 # install required plugins
 
 #!/bin/bash -e
@@ -15,7 +9,7 @@ echo "Awesome WordPress Installer!!"
 echo "================================================================="
 
 # accept user input for the user name
-echo "User Name: "
+echo "Username: "
 read -e wpuser
 
 # accept user input for the user email
@@ -103,7 +97,7 @@ done
 
 wp option update default_category 2
 wp option update default_email_category 2
-wp term delete 1
+wp term delete category 1
 
 # set pretty urls
 wp rewrite structure '/%postname%/' --hard
@@ -112,6 +106,17 @@ wp rewrite flush --hard
 # delete akismet and hello dolly
 wp plugin delete akismet
 wp plugin delete hello
+
+wp plugin install all-in-one-seo-pack
+wp plugin install disable-comments
+wp plugin install duplicate-post
+wp plugin install html-sitemap
+wp plugin install post-types-order
+wp plugin install regenerate-thumbnails
+wp plugin install wp-smushit
+wp plugin install lazy-load
+
+wp plugin activate --all
 
 # install the company starter theme
 # wp theme install ~/dropbox/websites/wordpress-themes/authored-themes/wordpress-boilerplate.zip --activate
@@ -152,5 +157,9 @@ echo "Username: $wpuser"
 echo "Password: $password"
 echo ""
 echo "================================================================="
+
+# Open the new website with Google Chrome
+php -S localhost:8000
+/usr/bin/open -a "/Applications/Google Chrome.app" "http://localhost:8000/"
 
 fi
