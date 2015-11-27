@@ -5,7 +5,7 @@
 clear
 
 echo "================================================================="
-echo "Awesome WordPress Installer!!"
+echo "Beth's Awesome WordPress Installer!!"
 echo "================================================================="
 
 # accept user input for the user name
@@ -95,6 +95,7 @@ for category in $allcategories; do
     wp term create category $category
 done
 
+# set new category to default and remove 'Uncategorized'
 wp option update default_category 2
 wp option update default_email_category 2
 wp term delete category 1
@@ -119,7 +120,6 @@ wp plugin install lazy-load
 wp plugin activate --all
 
 # install the company starter theme
-# wp theme install ~/dropbox/websites/wordpress-themes/authored-themes/wordpress-boilerplate.zip --activate
 # install the WordPress Boilerplate theme
 cd wp-content/themes/
 git clone https://github.com/elr-wordpress/wordpress-boilerplate
@@ -147,6 +147,12 @@ done
 
 # assign navigaiton to primary location
 wp menu location assign main-navigation primary
+
+# remove most default widgets from sidebar
+wp widget delete meta-2
+wp widget delete search-2
+wp widget delete recent-comments-2
+wp widget delete archives-2
 
 clear
 
