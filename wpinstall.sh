@@ -12,6 +12,10 @@ echo "================================================================="
 echo "Username: "
 read -e wpuser
 
+# accept user input for the user name
+echo "Password: "
+read -e wppass
+
 # accept user input for the user email
 echo "Admin Email: "
 read -e wpemail
@@ -31,6 +35,10 @@ read -e allpages
 # accept a comma separated list of categories
 echo "Add Categories: "
 read -e allcategories
+
+# accept a comma separated list of categories
+echo "Add Plugins: "
+read -e allplugins
 
 # add a simple yes/no confirmation before we proceed
 echo "Run Install? (y/n)"
@@ -52,12 +60,9 @@ PHP
 # parse the current directory name
 currentdirectory=${PWD##*/}
 
-# generate random 12 character password
-password='admin'
-
 # create database, and install WordPress
 wp db create
-wp core install --url="http://localhost:8000" --title="$sitename" --admin_user="$wpuser" --admin_password="$password" --admin_email="$wpemail"
+wp core install --url="http://localhost:8000" --title="$sitename" --admin_user="$wpuser" --admin_password="$wppass" --admin_email="$wpemail"
 
 # show only 5 posts on an archive page
 wp option update posts_per_page 5
@@ -108,14 +113,11 @@ wp rewrite flush --hard
 wp plugin delete akismet
 wp plugin delete hello
 
-wp plugin install all-in-one-seo-pack
-wp plugin install disable-comments
-wp plugin install duplicate-post
-wp plugin install html-sitemap
-wp plugin install post-types-order
-wp plugin install regenerate-thumbnails
-wp plugin install wp-smushit
-wp plugin install lazy-load
+# create all of the plugins
+export IFS=","
+for plugin in $allplugins; do
+    wp plugin install $plugin
+done
 
 wp plugin activate --all
 
@@ -138,15 +140,20 @@ clear
 
 # create a navigation bar
 wp menu create "Main Navigation"
+wp menu create "Footer Navigation"
+wp menu create "Social Navigation"
 
 # add pages to navigation
 export IFS=" "
 for pageid in $(wp post list --order="ASC" --orderby="date" --post_type=page --post_status=publish --posts_per_page=-1 --field=ID --format=ids); do
     wp menu item add-post main-navigation $pageid
+    wp menu item add-post footer-navigation $pageid
 done
 
-# assign navigaiton to primary location
-wp menu location assign main-navigation primary
+# assign navigaiton to main-nav location
+wp menu location assign main-navigation main-nav
+wp menu location assign footer-navigation footer-nav
+wp menu location assign social-navigation social-nav
 
 # remove most default widgets from sidebar
 wp widget delete meta-2
@@ -160,12 +167,12 @@ echo "================================================================="
 echo "Installation is complete. Your username/password is listed below."
 echo ""
 echo "Username: $wpuser"
-echo "Password: $password"
+echo "Password: $wppass"
 echo ""
 echo "================================================================="
 
 # Open the new website with Google Chrome
+cd ../../
 php -S localhost:8000
-/usr/bin/open -a "/Applications/Google Chrome.app" "http://localhost:8000/"
 
 fi
