@@ -123,13 +123,13 @@ wp plugin activate --all
 
 # install the company starter theme
 # install the WordPress Boilerplate theme
-cd wp-content/themes/
-git clone https://github.com/elr-wordpress/wordpress-boilerplate
-mv {wordpress-boilerplate/*,wordpress-boilerplate/.*} .
-rm -rf wordpress-boilerplate
-npm install && grunt build
+# cd wp-content/themes/
+# git clone https://github.com/elr-wordpress/wordpress-boilerplate
+# mv {wordpress-boilerplate/*,wordpress-boilerplate/.*} .
+# rm -rf wordpress-boilerplate
+# npm install && grunt build
 
-wp theme activate wordpress-boilerplate
+# wp theme activate wordpress-boilerplate
 
 ## themes
 # removes the inactive themes that automattically come wth an fresh installation of WP. Since WP needs one
@@ -174,5 +174,6 @@ echo "================================================================="
 # Open the new website with Google Chrome
 cd ../../
 php -S localhost:8000
+open http://localhost:8000
 
 fi
