@@ -8,6 +8,10 @@ echo "================================================================="
 echo "Beth's Awesome WordPress Installer!!"
 echo "================================================================="
 
+# accept the name of our website
+echo "Site Name: "
+read -e sitename
+
 # accept user input for the user name
 echo "Username: "
 read -e wpuser
@@ -20,13 +24,13 @@ read -e wppass
 echo "Admin Email: "
 read -e wpemail
 
+# accept user input for the site address
+echo "Site Address: "
+read -e siteaddress
+
 # accept user input for the databse name
 echo "Database Name: "
 read -e dbname
-
-# accept the name of our website
-echo "Site Name: "
-read -e sitename
 
 # accept a comma separated list of pages
 echo "Add Pages: "
@@ -35,10 +39,6 @@ read -e allpages
 # accept a comma separated list of categories
 echo "Add Categories: "
 read -e allcategories
-
-# accept a comma separated list of categories
-echo "Add Plugins: "
-read -e allplugins
 
 # add a simple yes/no confirmation before we proceed
 echo "Run Install? (y/n)"
@@ -49,23 +49,50 @@ if [ "$run" == n ] ; then
 exit
 else
 
+touch wp-cli.yml
+echo "path: wp" | tee wp-cli.yml
+mkdir app && cd app
+touch index.php
+echo "<?php // silence is golden" | tee index.php
+mkdir media mu-plugins plugins themes
+cd plugins
+touch index.php
+echo "<?php // silence is golden" | tee index.php
+cd ..
+cd themes
+touch index.php
+echo "<?php // silence is golden" | tee index.php
+cd ..
+cd ..
+mkdir wp && cd wp
+
 # download the WordPress core files
 wp core download
 
 # create the wp-config file with our standard setup
 wp core config --dbname=$dbname --dbuser=root --dbhost=127.0.0.1 --extra-php <<PHP
-define( 'WP_DEBUG', true );
+define('BASEURL', '$siteaddress');
+define('CONTENT_DIR', 'app');
+
+define('WP_CONTENT_DIR', dirname(__FILE__) . '/' . CONTENT_DIR);
+define('WP_CONTENT_URL', BASEURL . '/' . CONTENT_DIR);
+define('WP_PLUGIN_DIR',  dirname(__FILE__) . '/' . CONTENT_DIR . '/plugins');
+
+define('WP_DEBUG', true);
+define('DISALLOW_FILE_EDIT', true);
+
 PHP
 
-# parse the current directory name
-currentdirectory=${PWD##*/}
+mv wp-config.php ..
+cp index.php ..
 
 # create database, and install WordPress
 wp db create
-wp core install --url="http://localhost:8000" --title="$sitename" --admin_user="$wpuser" --admin_password="$wppass" --admin_email="$wpemail"
+wp core install --url="$siteaddress/wp" --title="$sitename" --admin_user="$wpuser" --admin_password="$wppass" --admin_email="$wpemail"
 
 # show only 5 posts on an archive page
 wp option update posts_per_page 5
+wp option update home $siteaddress
 
 # delete sample page, and create homepage
 wp post delete $(wp post list --post_type=page --posts_per_page=1 --post_status=publish --pagename="sample-page" --field=ID --format=ids)
@@ -109,27 +136,32 @@ wp term delete category 1
 wp rewrite structure '/%postname%/' --hard
 wp rewrite flush --hard
 
-# delete akismet and hello dolly
-wp plugin delete akismet
-wp plugin delete hello
+cd ..
 
-# create all of the plugins
-export IFS=","
-for plugin in $allplugins; do
-    wp plugin install $plugin
-done
+tail -n 1 "index.php" | wc -c | xargs -I {} truncate "index.php" -s -{}
+echo "require(dirname(__FILE__).'/wp/wp-blog-header.php');" >> index.php
 
-wp plugin activate --all
+echo "if ( empty( \$upload_path ) || 'wp-content/uploads' == \$upload_path ) {
+    update_option( 'upload_path', untrailingslashit( str_replace( 'wp', 'app/media', ABSPATH ) ) );
+    update_option( 'upload_url_path', home_url( 'app/media' ) );
+}" >> wp-config.php
 
 # install the company starter theme
 # install the WordPress Boilerplate theme
-# cd wp-content/themes/
-# git clone https://github.com/elr-wordpress/wordpress-boilerplate
-# mv {wordpress-boilerplate/*,wordpress-boilerplate/.*} .
-# rm -rf wordpress-boilerplate
-# npm install && grunt build
 
-# wp theme activate wordpress-boilerplate
+cd app/themes
+git clone https://github.com/Beth3346/wordpress-boilerplate-twig.git
+cd wordpress-boilerplate-twig
+
+composer install
+npm install
+grunt build
+
+cd ..
+cd ..
+cd wp
+
+wp theme activate wordpress-boilerplate-twig
 
 ## themes
 # removes the inactive themes that automattically come wth an fresh installation of WP. Since WP needs one
@@ -142,18 +174,6 @@ clear
 wp menu create "Main Navigation"
 wp menu create "Footer Navigation"
 wp menu create "Social Navigation"
-
-# add pages to navigation
-export IFS=" "
-for pageid in $(wp post list --order="ASC" --orderby="date" --post_type=page --post_status=publish --posts_per_page=-1 --field=ID --format=ids); do
-    wp menu item add-post main-navigation $pageid
-    wp menu item add-post footer-navigation $pageid
-done
-
-# assign navigaiton to main-nav location
-wp menu location assign main-navigation main-nav
-wp menu location assign footer-navigation footer-nav
-wp menu location assign social-navigation social-nav
 
 # remove most default widgets from sidebar
 wp widget delete meta-2
@@ -170,10 +190,5 @@ echo "Username: $wpuser"
 echo "Password: $wppass"
 echo ""
 echo "================================================================="
-
-# Open the new website with Google Chrome
-cd ../../
-php -S localhost:8000
-open http://localhost:8000
 
 fi
